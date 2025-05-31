@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Language Translator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    background: rgba(255,255,255,0.1);
+    border-radius: 15px;
+    max-width: 900px;
+    width: 100%;
+    padding: 30px 40px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  h1 {
+    margin-bottom: 20px;
+    font-weight: 700;
+    font-size: 2.5rem;
+    text-align: center;
+  }
+  label {
+    display: block;
+    font-weight: 500;
+    margin: 15px 0 8px 0;
+  }
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    font-size: 1.1rem;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border: none;
+    resize: vertical;
+    font-family: 'Poppins', sans-serif;
+  }
+  select {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    appearance: none;
+    cursor: pointer;
+  }
+  button {
+    margin-top: 25px;
+    width: 100%;
+    padding: 15px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #764ba2;
+    background: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    box-shadow: 0 6px 15px rgba(118, 75, 162, 0.4);
+  }
+  button:hover {
+    background: #e0d7f5;
+  }
+  .output-container {
+    margin-top: 20px;
+  }
+  .output-text {
+    width: 100%;
+    min-height: 120px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    user-select: text;
+    color: #f0e6ff;
+  }
+  .loading {
+    font-style: italic;
+    text-align: center;
+    margin-top: 15px;
+    color: #ddd;
+  }
+  .footer {
+    margin-top: 30px;
+    font-size: 0.9rem;
+    color: #ccc;
+    text-align: center;
+  }
+  @media (max-width: 480px) {
+    .container {
+      padding: 20px 25px;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container" role="main">
+  <h1>Language Translator</h1>
+  <label for="source-lang">From</label>
+  <select id="source-lang" aria-label="Select source language">
+    <!-- options populated by JS -->
+  </select>
+
+  <label for="input-text">Enter text to translate:</label>
+  <textarea id="input-text" placeholder="Type or paste text here..." aria-label="Input text"></textarea>
+
+  <label for="target-lang">To</label>
+  <select id="target-lang" aria-label="Select target language">
+    <!-- options populated by JS -->
+  </select>
+
+  <button id="translate-btn" aria-live="polite" aria-busy="false">Translate</button>
+
+  <div class="output-container" aria-live="polite" aria-atomic="true" aria-relevant="text">
+    <label for="output-text">Translation:</label>
+    <div id="output-text" class="output-text" tabindex="0" aria-label="Translated text"></div>
+  </div>
+
+  <div id="loading-message" class="loading" aria-live="assertive" style="display:none;">Translating...</div>
+
+  <div class="footer">Powered by <a href="https://translate.google.com/" target="_blank" rel="noopener noreferrer" style="color:#ccc;">Google Translate API</a></div>
+</div>
+
+<script>
+  // Supported languages for Google Translate
+  const languages = [
+    { code: 'auto', name: 'Auto Detect' },
+    { code: 'en', name: 'English' },
+    { code: 'si', name: 'Sinhala' },
+    { code: 'ar', name: 'Arabic' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'hi', name: 'Hindi' },
+    { code: 'it', name: 'Italian' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'ta', name: 'Tamil' }
+  ];
+
+  const sourceLangSelect = document.getElementById('source-lang');
+  const targetLangSelect = document.getElementById('target-lang');
+  const inputTextArea = document.getElementById('input-text');
+  const outputTextDiv = document.getElementById('output-text');
+  const translateBtn = document.getElementById('translate-btn');
+  const loadingMessage = document.getElementById('loading-message');
+
+  function populateLanguageSelect(selectElement) {
+    languages.forEach(lang => {
+      const option = document.createElement('option');
+      option.value = lang.code;
+      option.textContent = lang.name;
+      selectElement.appendChild(option);
+    });
+  }
+
+  // Initially populate language selects
+  populateLanguageSelect(sourceLangSelect);
+  populateLanguageSelect(targetLangSelect);
+
+  // Set sensible defaults
+  sourceLangSelect.value = 'auto';
+  targetLangSelect.value = 'si'; // Default to Sinhala as target
+
+  translateBtn.addEventListener('click', async () => {
+    const text = inputTextArea.value.trim();
+    const source = sourceLangSelect.value;
+    const target = targetLangSelect.value;
+
+    if (!text) {
+      alert('Please enter text to translate.');
+      inputTextArea.focus();
+      return;
+    }
+    if (source === target && source !== 'auto') {
+      alert('Source and target languages must be different.');
+      targetLangSelect.focus();
+      return;
+    }
+
+    translateBtn.disabled = true;
+    translateBtn.setAttribute('aria-busy', 'true');
+    loadingMessage.style.display = 'block';
+    outputTextDiv.textContent = '';
+
+    try {
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Translation API error: ' + response.statusText);
+      }
+      
+      const data = await response.json();
+      // Google Translate returns the translation in data[0][0][0]
+      outputTextDiv.textContent = data[0][0][0] || 'No translation received.';
+    } catch (error) {
+      outputTextDiv.textContent = 'Error: ' + error.message;
+      console.error('Translation error:', error);
+    } finally {
+      translateBtn.disabled = false;
+      translateBtn.setAttribute('aria-busy', 'false');
+      loadingMessage.style.display = 'none';
+      outputTextDiv.focus();
+    }
+  });
+</script>
+</body>
+</html>
