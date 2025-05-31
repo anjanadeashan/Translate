@@ -139,7 +139,7 @@
 
   <div id="loading-message" class="loading" aria-live="assertive" style="display:none;">Translating...</div>
 
-  <div class="footer">Powered by <a href="https://translate.google.com/" target="_blank" rel="noopener noreferrer" style="color:#ccc;">Google Translate API</a></div>
+  
 </div>
 
 <script>
@@ -217,8 +217,18 @@
       }
       
       const data = await response.json();
-      // Google Translate returns the translation in data[0][0][0]
-      outputTextDiv.textContent = data[0][0][0] || 'No translation received.';
+      
+      // Handle multiple sentences in the translation
+      let translatedText = '';
+      if (data && data[0]) {
+        for (let i = 0; i < data[0].length; i++) {
+          if (data[0][i] && data[0][i][0]) {
+            translatedText += data[0][i][0];
+          }
+        }
+      }
+      
+      outputTextDiv.textContent = translatedText || 'No translation received.';
     } catch (error) {
       outputTextDiv.textContent = 'Error: ' + error.message;
       console.error('Translation error:', error);
@@ -227,6 +237,14 @@
       translateBtn.setAttribute('aria-busy', 'false');
       loadingMessage.style.display = 'none';
       outputTextDiv.focus();
+    }
+  });
+
+  // Allow pressing Enter in textarea to trigger translation
+  inputTextArea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      translateBtn.click();
     }
   });
 </script>
